@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import fs from 'fs';
-import path from 'path';
 
 export async function GET(request: Request) {
   try {
@@ -33,7 +31,7 @@ export async function GET(request: Request) {
     
     console.log(`User found: ${userCheck[0].first_name} ${userCheck[0].surname}`);
     
-    // Fetch documents for this user from user_documents table
+    // Fetch documents for this user
     const documents = await query(`
       SELECT 
         document_id,
@@ -47,28 +45,24 @@ export async function GET(request: Request) {
         verified_at
       FROM user_documents
       WHERE user_id = @userId
-      ORDER BY uploaded_at DESC
+      ORDER BY 
+        CASE document_type
+          WHEN 'introduction_letter' THEN 1
+          WHEN 'application_letter' THEN 2
+          WHEN 'cv' THEN 3
+          WHEN 'insurance' THEN 4
+          WHEN 'id_card' THEN 5
+          WHEN 'police_clearance' THEN 6
+          WHEN 'transcripts' THEN 7
+          ELSE 8
+        END
     `, [{ name: 'userId', value: parseInt(userId) }]);
     
     console.log(`Found ${documents?.length || 0} documents for user ${userId}`);
     
-    // Format document type for display
-    const formattedDocuments = (documents || []).map((doc: any) => ({
-      document_id: doc.document_id,
-      document_type: doc.document_type,
-      document_name: doc.document_name,
-      file_path: doc.file_path,
-      file_size: doc.file_size,
-      file_type: doc.file_type,
-      uploaded_at: doc.uploaded_at,
-      is_verified: doc.is_verified,
-      // Format document type for better display
-      display_name: getDocumentDisplayName(doc.document_type)
-    }));
-    
     return NextResponse.json({
       success: true,
-      documents: formattedDocuments,
+      documents: documents || [],
       user: userCheck[0]
     });
     
@@ -87,7 +81,9 @@ function getDocumentDisplayName(documentType: string): string {
     'application_letter': '📝 Application Letter (Cover Letter)',
     'cv': '📑 Curriculum Vitae (CV)',
     'insurance': '🛡️ Personal Accident/Medical Insurance Cover',
-    'id_card': '🪪 National ID or Passport'
+    'id_card': '🪪 National ID or Passport',
+    'police_clearance': '👮 Police Clearance Certificate',
+    'transcripts': '📊 Exam Transcripts'
   };
   return displayNames[documentType] || documentType;
 }

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const documentType = formData.get('documentType');
     const file = formData.get('file') as File;
     
-    // Validate required fields (no applicationId needed)
+    // Validate required fields
     if (!userId || !documentType || !file) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: userId, documentType, and file are required' },
@@ -75,10 +75,17 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(bytes);
     await writeFile(fullFilePath, buffer);
     
-    // Validate document type is allowed
+    // Validate document type is allowed - UPDATED with new document types
     const allowedDocumentTypes = [
-      'introduction_letter', 'application_letter', 'cv', 'insurance', 'id_card'
+      'introduction_letter', 
+      'application_letter', 
+      'cv', 
+      'insurance', 
+      'id_card',
+      'police_clearance',      // Added
+      'transcripts'             // Added
     ];
+    
     if (!allowedDocumentTypes.includes(documentType.toString())) {
       return NextResponse.json(
         { success: false, error: 'Invalid document type' },
@@ -86,7 +93,7 @@ export async function POST(request: Request) {
       );
     }
     
-    // Convert userId to number (BIGINT)
+    // Convert userId to number
     const userIdNum = parseInt(userId.toString());
     
     // Check if document already exists for this user
@@ -100,7 +107,7 @@ export async function POST(request: Request) {
     );
     
     if (existingDoc && existingDoc.length > 0) {
-      // Update existing document (no application_id)
+      // Update existing document
       await query(`
         UPDATE user_documents 
         SET document_name = @fileName, 
@@ -118,7 +125,7 @@ export async function POST(request: Request) {
         { name: 'fileType', value: file.type }
       ]);
     } else {
-      // Insert new document (no application_id column)
+      // Insert new document
       await query(`
         INSERT INTO user_documents (user_id, document_type, document_name, file_path, file_size, file_type)
         VALUES (@userId, @documentType, @fileName, @filePath, @fileSize, @fileType)

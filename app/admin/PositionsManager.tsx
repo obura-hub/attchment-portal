@@ -78,50 +78,49 @@ export default function PositionsManager({ onUpdate }: { onUpdate: () => void })
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.department_id || formData.department_id === 0) {
-      warning("Please select a department");
-      return;
-    }
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!formData.department_id || formData.department_id === 0) {
+    warning("Please select a department before saving.");
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const url = editingPosition ? '/api/admin/positions/update' : '/api/admin/positions/create';
-      const method = editingPosition ? 'PUT' : 'POST';
-      const body = editingPosition ? { ...formData, position_id: editingPosition.position_id } : formData;
+  try {
+    const url = editingPosition ? '/api/admin/positions/update' : '/api/admin/positions/create';
+    const method = editingPosition ? 'PUT' : 'POST';
+    const body = editingPosition ? { ...formData, position_id: editingPosition.position_id } : formData;
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+    const response = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (data.success) {
-        if (editingPosition) {
-          success(`✏️ Position "${formData.position_title}" updated successfully!`);
-        } else {
-          success(`✅ Position "${formData.position_title}" created successfully!`);
-        }
-        setShowForm(false);
-        setEditingPosition(null);
-        resetForm();
-        fetchPositions();
-        onUpdate();
+    if (data.success) {
+      if (editingPosition) {
+        success(`🎉 Position "${formData.position_title}" has been successfully updated!`);
       } else {
-        toastError(data.error || "Failed to save position");
+        success(`🎉 New position "${formData.position_title}" has been created successfully!`);
       }
-    } catch (err) {
-      toastError("Error saving position");
-    } finally {
-      setLoading(false);
+      setShowForm(false);
+      setEditingPosition(null);
+      resetForm();
+      fetchPositions();
+      onUpdate();
+    } else {
+      toastError(data.error || "Failed to save position");
     }
-  };
-
+  } catch (err) {
+    toastError("Error saving position");
+  } finally {
+    setLoading(false);
+  }
+};
   const resetForm = () => {
     setFormData({
       position_title: "",
@@ -156,7 +155,7 @@ export default function PositionsManager({ onUpdate }: { onUpdate: () => void })
       });
       const data = await response.json();
       if (data.success) {
-        success(`🗑️ Position "${deletingPosition.position_title}" deleted successfully!`);
+        success(`🗑️ Position "${deletingPosition.position_title}" has been permanently deleted.`);
         setShowDeleteModal(false);
         setDeletingPosition(null);
         fetchPositions();
@@ -273,7 +272,7 @@ export default function PositionsManager({ onUpdate }: { onUpdate: () => void })
                   <label className="block text-sm font-medium mb-1">Duration (Weeks)</label>
                   <input
                     type="number"
-                    min="4"
+                    min="12"
                     max="52"
                     className="w-full border rounded-lg px-3 py-2"
                     value={formData.attachment_duration_weeks}

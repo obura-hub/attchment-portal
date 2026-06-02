@@ -31,7 +31,7 @@ interface Position {
 }
 
 export default function OpportunitiesList({ user, userId, onApply }: OpportunitiesListProps) {
-  const { success, error, warning, info } = useToast();
+  const { success, error: toastError, warning, info } = useToast();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
@@ -79,6 +79,7 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
+      toastError('Failed to load departments');
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
       const data = await response.json();
       if (data.success && data.documents) {
         // Check if all required documents are uploaded
-        const requiredDocs = ["introduction_letter", "application_letter", "cv", "insurance", "id_card"];
+        const requiredDocs = ["introduction_letter", "application_letter", "cv", "insurance", "id_card", "police_clearance"];
         const uploadedDocTypes = new Set(data.documents.map((doc: any) => doc.document_type));
         const allDocsUploaded = requiredDocs.every(doc => uploadedDocTypes.has(doc));
         setHasDocuments(allDocsUploaded);
@@ -129,6 +130,7 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
     } catch (error) {
       console.error('Error fetching positions:', error);
       setPositions([]);
+      toastError('Failed to load positions');
     } finally {
       setLoadingPositions(false);
     }
@@ -138,11 +140,51 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
     setSelectedDepartment(e.target.value);
   };
 
-   const handleApplyClick = (position: Position) => {
+  // Function to submit application after documents are uploaded
+  const submitApplication = async (position: Position) => {
+    setApplying(position.position_id);
+    try {
+      const response = await fetch('/api/dashboard/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          positionId: position.position_id,
+          userId: userId,
+          coverLetter: "Application submitted with required documents"
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        success(`🎉 Successfully applied for ${position.position_title}!`);
+        setShowDocumentsModal(false);
+        setPendingPosition(null);
+        setHasApplied(prev => new Set(prev).add(position.position_id));
+        onApply();
+        // Refresh positions to update applied count
+        if (selectedDepartment) {
+          fetchPositions(selectedDepartment);
+        }
+      } else {
+        toastError(data.error || "Failed to submit application");
+      }
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      toastError("Error submitting application. Please try again.");
+    } finally {
+      setApplying(null);
+    }
+  };
+
+  const handleApplyClick = (position: Position) => {
+    // Check if user already applied
     if (hasApplied.has(position.position_id)) {
       warning(`You have already applied for ${position.position_title}`);
       return;
     }
+    
+    // Store the selected position and open documents modal
     setPendingPosition(position);
     setShowDocumentsModal(true);
   };
@@ -289,12 +331,20 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
                       className={`w-full py-2 rounded-lg font-medium transition ${
                         alreadyApplied
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : !hasDocuments
+                          ? 'bg-yellow-300 text-yellow-800 cursor-not-allowed'
                           : position.is_open
                           ? 'bg-green-700 text-white hover:bg-green-800'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      {alreadyApplied ? 'Already Applied' : 'Apply Now'}
+                      {alreadyApplied 
+                        ? 'Already Applied' 
+                        : !hasDocuments 
+                        ? 'Upload Documents First' 
+                        : position.is_open 
+                        ? 'Apply Now' 
+                        : 'Position Closed'}
                     </button>
                   </div>
                 );
@@ -350,37 +400,4 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
       )}
     </div>
   );
-
-  // Function to submit application after documents are uploaded
-  const submitApplicationAfterDocuments = async (position: Position) => {
-    setApplying(position.position_id);
-    try {
-      const response = await fetch('/api/dashboard/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          positionId: position.position_id,
-          userId: userId,
-          coverLetter: "Application submitted with required documents"
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        success(`🎉 Successfully applied for ${position.position_title}!`);
-        setShowDocumentsModal(false);
-        setPendingPosition(null);
-        setHasApplied(prev => new Set(prev).add(position.position_id));
-        onApply();
-        fetchPositions(selectedDepartment);
-      } else {
-        error(data.error || "Failed to submit application");
-      }
-    } catch (err) {
-      error("Error submitting application. Please try again.");
-    } finally {
-      setApplying(null);
-    }
-  };
 }

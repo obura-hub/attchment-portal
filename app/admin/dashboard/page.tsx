@@ -7,174 +7,143 @@ import ApplicationsManager from "@/components/admin/ApplicationsManager";
 import PositionsManager from "@/components/admin/PositionsManager";
 import ReportsManager from "@/components/admin/ReportsManager";
 
-export default function AdminDashboard() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState("applications");
-  const [admin, setAdmin] = useState<any>(null);
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    totalApplications: 0,
-    pendingApplications: 0,
-    shortlistedApplications: 0,
-    acceptedApplications: 0,
-    rejectedApplications: 0,
-    totalPositions: 0,
-    openPositions: 0
-  });
-
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    if (!isLoggedIn) {
-      router.push('/admin/login');
-      return;
-    }
-    const adminData = localStorage.getItem('adminData');
-    if (adminData) {
-      setAdmin(JSON.parse(adminData));
-    }
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/admin/stats');
-      const data = await response.json();
-      if (data.success) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
-   const handleLogout = async () => {
-    try {
-      await fetch('/api/logout', { method: 'POST' });
-      success("👋 Logged out successfully!");
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      localStorage.removeItem('adminLoggedIn');
-      localStorage.removeItem('adminData');
-      setTimeout(() => {
-        router.push('/admin/login');
-      }, 1000);
-    }
-  };
+// Sidebar Menu Component
+function Sidebar({ activeMenu, onMenuChange }: { activeMenu: string; onMenuChange: (menu: string) => void }) {
+  const menuItems = [
+    { id: "dashboard", name: "Dashboard", icon: "📊" },
+    { id: "applications", name: "Applications", icon: "📋" },
+    { id: "documents", name: "Documents", icon: "📎" },
+    { id: "reports", name: "Reports", icon: "📊" },
+    { id: "positions", name: "Positions", icon: "📌" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-green-800 text-white shadow-lg sticky top-0 z-50">
-        <div className="px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-green-200 text-sm">Nairobi City County - Attachment Program</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <span>Welcome, {admin?.full_name || 'Admin'}</span>
-            <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded hover:bg-red-700 transition">
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+    <aside className="w-64 bg-gradient-to-b from-green-800 to-green-700 shadow-lg min-h-screen flex-shrink-0">
+      <div className="p-4 border-b border-green-600">
+        <h2 className="text-xl font-bold text-white">ADMIN DASHBOARD</h2>
+      </div>
+      <nav className="p-2">
+        {menuItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onMenuChange(item.id)}
+            className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition flex items-center gap-3 ${
+              activeMenu === item.id
+                ? "bg-white/20 text-white"
+                : "text-green-100 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <span className="text-xl">{item.icon}</span>
+            <span>{item.name}</span>
+          </button>
+        ))}
+      </nav>
+    </aside>
+  );
+}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 p-6">
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-green-700">{stats.totalStudents}</div>
-          <div className="text-sm text-gray-600">Total Students</div>
+// Stats Card Component
+function StatCard({ title, value, icon, color }: { title: string; value: number; icon: string; color: string }) {
+  return (
+    <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-l-green-600">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-gray-500 text-sm mb-1">{title}</p>
+          <p className="text-3xl font-bold text-gray-800">{value}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-blue-700">{stats.totalApplications}</div>
-          <div className="text-sm text-gray-600">Applications</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-yellow-700">{stats.pendingApplications}</div>
-          <div className="text-sm text-gray-600">Pending</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-indigo-700">{stats.shortlistedApplications}</div>
-          <div className="text-sm text-gray-600">Shortlisted</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-green-700">{stats.acceptedApplications}</div>
-          <div className="text-sm text-gray-600">Accepted</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-red-700">{stats.rejectedApplications}</div>
-          <div className="text-sm text-gray-600">Rejected</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-purple-700">{stats.totalPositions}</div>
-          <div className="text-sm text-gray-600">Total Positions</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-2xl font-bold text-orange-700">{stats.openPositions}</div>
-          <div className="text-sm text-gray-600">Open Positions</div>
+        <div className={`text-3xl ${color}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+// Dashboard Overview Component
+function DashboardOverview({ stats, currentDate, setActiveMenu }: { stats: any; currentDate: string; setActiveMenu: (menu: string) => void }) {
+  return (
+    <div className="space-y-6">
+  
+
+      {/* Stats Grid - Top Row */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <StatCard title="Total Students" value={stats.totalStudents} icon="👥" color="text-blue-500" />
+        <StatCard title="Total Applications" value={stats.totalApplications} icon="📝" color="text-purple-500" />
+        <StatCard title="Total Positions" value={stats.totalPositions} icon="💼" color="text-orange-500" />
+        <StatCard title="Open Positions" value={stats.openPositions} icon="🔓" color="text-green-500" />
+      </div>
+
+      {/* Stats Grid - Application Status */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+        <StatCard title="Pending" value={stats.pendingApplications} icon="⏳" color="text-yellow-500" />
+        <StatCard title="Shortlisted" value={stats.shortlistedApplications} icon="⭐" color="text-blue-500" />
+        <StatCard title="Accepted" value={stats.acceptedApplications} icon="✅" color="text-green-500" />
+        <StatCard title="Rejected" value={stats.rejectedApplications} icon="❌" color="text-red-500" />
+        <StatCard title="Departments" value={15} icon="🏛️" color="text-indigo-500" />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <button onClick={() => setActiveMenu("applications")} className="bg-green-50 text-green-700 p-4 rounded-lg text-center hover:bg-green-100 transition">
+            <div className="text-2xl mb-2">📋</div>
+            <div className="font-medium">View Applications</div>
+          </button>
+          <button onClick={() => setActiveMenu("positions")} className="bg-blue-50 text-blue-700 p-4 rounded-lg text-center hover:bg-blue-100 transition">
+            <div className="text-2xl mb-2">📌</div>
+            <div className="font-medium">Post Positions</div>
+          </button>
+          <button onClick={() => setActiveMenu("documents")} className="bg-purple-50 text-purple-700 p-4 rounded-lg text-center hover:bg-purple-100 transition">
+            <div className="text-2xl mb-2">📎</div>
+            <div className="font-medium">View Documents</div>
+          </button>
+          <button onClick={() => setActiveMenu("reports")} className="bg-orange-50 text-orange-700 p-4 rounded-lg text-center hover:bg-orange-100 transition">
+            <div className="text-2xl mb-2">📊</div>
+            <div className="font-medium">Export Reports</div>
+          </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 bg-white px-6">
-        <nav className="flex gap-6 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("applications")}
-            className={`py-3 px-2 font-medium transition whitespace-nowrap ${
-              activeTab === "applications"
-                ? "text-green-700 border-b-2 border-green-700"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            📋 Applications Management
-          </button>
-          <button
-            onClick={() => setActiveTab("documents")}
-            className={`py-3 px-2 font-medium transition whitespace-nowrap ${
-              activeTab === "documents"
-                ? "text-green-700 border-b-2 border-green-700"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            📎 View Documents
-          </button>
-          <button
-            onClick={() => setActiveTab("reports")}
-            className={`py-3 px-2 font-medium transition whitespace-nowrap ${
-              activeTab === "reports"
-                ? "text-green-700 border-b-2 border-green-700"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            📊 Reports & Export
-          </button>
-          <button
-            onClick={() => setActiveTab("positions")}
-            className={`py-3 px-2 font-medium transition whitespace-nowrap ${
-              activeTab === "positions"
-                ? "text-green-700 border-b-2 border-green-700"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            📌 Post Positions
-          </button>
-        </nav>
-      </div>
-
-      {/* Content */}
-      <div className="p-6">
-        {activeTab === "applications" && <ApplicationsManager onUpdate={fetchStats} />}
-        {activeTab === "documents" && <DocumentsViewer />}
-        {activeTab === "reports" && <ReportsManager stats={stats} />}
-        {activeTab === "positions" && <PositionsManager onUpdate={fetchStats} />}
+      {/* Recent Activity */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-green-600">📝</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">New applications received</p>
+              <p className="text-xs text-gray-500">{stats.pendingApplications} pending review</p>
+            </div>
+            <span className="text-xs text-gray-400">Today</span>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600">⭐</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Shortlisted candidates</p>
+              <p className="text-xs text-gray-500">{stats.shortlistedApplications} candidates shortlisted</p>
+            </div>
+            <span className="text-xs text-gray-400">This week</span>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-purple-600">📌</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Open positions</p>
+              <p className="text-xs text-gray-500">{stats.openPositions} positions accepting applications</p>
+            </div>
+            <span className="text-xs text-gray-400">Active</span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 // Documents Viewer Component
-
 function DocumentsViewer() {
   const { success, error: toastError, info } = useToast();
   const [applications, setApplications] = useState<any[]>([]);
@@ -197,6 +166,7 @@ function DocumentsViewer() {
       }
     } catch (error) {
       console.error('Error fetching applications:', error);
+      toastError('Failed to load applications');
     } finally {
       setLoading(false);
     }
@@ -213,11 +183,12 @@ function DocumentsViewer() {
       if (data.success) {
         setDocuments(data.documents);
         if (data.documents.length === 0) {
-          console.log('No documents found for user:', userId);
+          info(`No documents found for ${studentName}`);
         }
       }
     } catch (error) {
       console.error('Error fetching documents:', error);
+      toastError('Failed to fetch documents');
       setDocuments([]);
     } finally {
       setLoadingDocs(false);
@@ -225,21 +196,36 @@ function DocumentsViewer() {
   };
 
   const downloadDocument = (filePath: string, fileName: string) => {
-    // Construct full URL for the file
     const baseUrl = window.location.origin;
     const fileUrl = `${baseUrl}${filePath}`;
     window.open(fileUrl, '_blank');
+    success(`Downloading: ${fileName}`);
   };
 
-  const getDocumentTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      'introduction_letter': '📄 Introduction Letter',
-      'application_letter': '📝 Application Letter',
-      'cv': '📑 Curriculum Vitae',
-      'insurance': '🛡️ Insurance Cover',
-      'id_card': '🪪 ID/Passport'
+  const getDocumentIcon = (docType: string) => {
+    const icons: Record<string, string> = {
+      'introduction_letter': '📄',
+      'application_letter': '📝',
+      'cv': '📑',
+      'insurance': '🛡️',
+      'id_card': '🪪',
+      'police_clearance': '👮',
+      'transcripts': '📊'
     };
-    return labels[type] || type;
+    return icons[docType] || '📎';
+  };
+
+  const getDocumentDisplayName = (docType: string): string => {
+    const displayNames: Record<string, string> = {
+      'introduction_letter': '📄 Introduction Letter from School',
+      'application_letter': '📝 Application Letter (Cover Letter)',
+      'cv': '📑 Curriculum Vitae (CV)',
+      'insurance': '🛡️ Personal Accident/Medical Insurance Cover',
+      'id_card': '🪪 National ID or Passport',
+      'police_clearance': '👮 Police Clearance Certificate',
+      'transcripts': '📊 Exam Transcripts'
+    };
+    return displayNames[docType] || docType;
   };
 
   if (loading) {
@@ -264,14 +250,18 @@ function DocumentsViewer() {
                 <th className="px-6 py-3 text-left text-sm font-semibold">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-200">
               {applications.map((app) => (
                 <tr key={app.application_id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="font-medium">{app.student_name}</div>
                     <div className="text-xs text-gray-500">{app.student_email}</div>
+                    <div className="text-xs text-gray-400">{app.student_phone}</div>
                    </td>
-                  <td className="px-6 py-4">{app.position_title}</td>
+                  <td className="px-6 py-4">
+                    <div className="font-medium">{app.position_title}</div>
+                    <div className="text-xs text-gray-500">{app.department_name}</div>
+                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 text-xs rounded ${
                       app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -281,12 +271,10 @@ function DocumentsViewer() {
                     }`}>
                       {app.status}
                     </span>
-                  </td>
+                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-500">
-                      📎 {app.documents_count || 0} document(s)
-                    </span>
-                  </td>
+                    <span className="text-sm text-gray-500">📎 {app.documents_count || 0} document(s)</span>
+                   </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => fetchDocuments(app.user_id, app.student_name)}
@@ -294,7 +282,7 @@ function DocumentsViewer() {
                     >
                       View Documents
                     </button>
-                  </td>
+                   </td>
                 </tr>
               ))}
             </tbody>
@@ -308,20 +296,10 @@ function DocumentsViewer() {
       {/* Documents Modal */}
       {showModal && selectedApp && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-              <h3 className="text-xl font-bold">
-                Documents: {selectedApp.student_name}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  setDocuments([]);
-                }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
+              <h3 className="text-xl font-bold">Documents: {selectedApp.student_name}</h3>
+              <button onClick={() => { setShowModal(false); setDocuments([]); }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
             </div>
             <div className="p-4">
               {loadingDocs ? (
@@ -331,28 +309,24 @@ function DocumentsViewer() {
                 </div>
               ) : documents.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-5xl mb-4">📂</div>
+                  <div className="text-6xl mb-4">📂</div>
                   <p className="text-gray-500">No documents uploaded by this student</p>
                   <p className="text-xs text-gray-400 mt-2">Make sure the student has uploaded documents from their dashboard</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {documents.map((doc) => (
-                    <div key={doc.document_id} className="border rounded-lg p-4 flex justify-between items-center hover:bg-gray-50">
-                      <div>
-                        <div className="font-medium">{getDocumentTypeLabel(doc.document_type)}</div>
-                        <div className="text-sm text-gray-600">{doc.document_name}</div>
-                        <div className="text-xs text-gray-400">
-                          Uploaded: {new Date(doc.uploaded_at).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Size: {doc.file_size ? (doc.file_size / 1024).toFixed(2) : 'N/A'} KB
+                    <div key={doc.document_id} className="border rounded-lg p-4 flex justify-between items-center hover:bg-gray-50 transition">
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">{getDocumentIcon(doc.document_type)}</div>
+                        <div>
+                          <div className="font-medium text-gray-800">{getDocumentDisplayName(doc.document_type)}</div>
+                          <div className="text-sm text-gray-500">File: {doc.document_name}</div>
+                          <div className="text-xs text-gray-400">Uploaded: {new Date(doc.uploaded_at).toLocaleString()}</div>
+                          {doc.file_size && <div className="text-xs text-gray-400">Size: {(doc.file_size / 1024).toFixed(2)} KB</div>}
                         </div>
                       </div>
-                      <button
-                        onClick={() => downloadDocument(doc.file_path, doc.document_name)}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
-                      >
+                      <button onClick={() => downloadDocument(doc.file_path, doc.document_name)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition flex items-center gap-2">
                         📥 Download
                       </button>
                     </div>
@@ -363,6 +337,110 @@ function DocumentsViewer() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Main Admin Dashboard Component
+export default function AdminDashboard() {
+  const router = useRouter();
+  const { success, error: toastError } = useToast();
+  const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [admin, setAdmin] = useState<any>(null);
+  const [currentDate, setCurrentDate] = useState("");
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalApplications: 0,
+    pendingApplications: 0,
+    shortlistedApplications: 0,
+    acceptedApplications: 0,
+    rejectedApplications: 0,
+    totalPositions: 0,
+    openPositions: 0
+  });
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('adminLoggedIn');
+    if (!isLoggedIn) {
+      router.push('/admin/login');
+      return;
+    }
+    const adminData = localStorage.getItem('adminData');
+    if (adminData) {
+      setAdmin(JSON.parse(adminData));
+    }
+    fetchStats();
+    
+    const date = new Date();
+    setCurrentDate(date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admin/stats');
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      success("👋 Logged out successfully!");
+    } catch (err) {
+      console.error('Logout error:', err);
+      toastError("Failed to logout");
+    } finally {
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminData');
+      setTimeout(() => {
+        router.push('/admin/login');
+      }, 1000);
+    }
+  };
+
+  const renderContent = () => {
+    switch (activeMenu) {
+      case "applications":
+        return <ApplicationsManager onUpdate={fetchStats} />;
+      case "documents":
+        return <DocumentsViewer />;
+      case "reports":
+        return <ReportsManager stats={stats} />;
+      case "positions":
+        return <PositionsManager onUpdate={fetchStats} />;
+      default:
+        return <DashboardOverview stats={stats} currentDate={currentDate} setActiveMenu={setActiveMenu} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
+      <div className="flex-1 flex flex-col">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">
+                {activeMenu === "dashboard" ? "Dashboard" : 
+                 activeMenu === "applications" ? "Applications Management" :
+                 activeMenu === "documents" ? "Documents Viewer" :
+                 activeMenu === "reports" ? "Reports & Export" : "Positions Management"}
+              </h1>
+      
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-gray-600">Welcome, {admin?.full_name || 'Admin'}</span>
+              <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">Logout</button>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 p-6">{renderContent()}</main>
+      </div>
     </div>
   );
 }

@@ -23,19 +23,22 @@ interface DocumentUpload {
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
 export default function DocumentsRequired({ userId, onUpdate, preselectedPositionId, onDocumentsComplete }: DocumentsRequiredProps) {
-  const { success, error: toastError, warning, info } = useToast(); // Renamed to toastError
+  const { success, error: toastError, warning, info } = useToast();
   const [documents, setDocuments] = useState<DocumentUpload[]>([
     { type: "introduction_letter", name: "Introduction Letter from School", required: true, file: null, uploaded: false },
     { type: "application_letter", name: "Application Letter (Cover Letter)", required: true, file: null, uploaded: false },
     { type: "cv", name: "Curriculum Vitae (CV)", required: true, file: null, uploaded: false },
     { type: "insurance", name: "Personal Accident/Medical Insurance Cover", required: true, file: null, uploaded: false },
-    { type: "id_card", name: "National ID or Passport", required: true, file: null, uploaded: false }
+    { type: "id_card", name: "National ID or Passport", required: true, file: null, uploaded: false },
+    { type: "police_clearance", name: "Police Clearance Certificate", required: true, file: null, uploaded: false },
+    { type: "transcripts", name: "Exam Transcripts", required: false, file: null, uploaded: false }
   ]);
   
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: boolean }>({});
   const [message, setMessage] = useState("");
-  const [errorMsg, setErrorMsg] = useState(""); // Renamed from error to errorMsg
+  const [errorMsg, setErrorMsg] = useState("");
   const [existingDocuments, setExistingDocuments] = useState<any[]>([]);
 
   useEffect(() => {
@@ -102,6 +105,9 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
   const uploadDocument = async (doc: DocumentUpload, index: number): Promise<boolean> => {
     if (!doc.file) return false;
     
+    // Update progress for this document
+    setUploadProgress(prev => ({ ...prev, [doc.type]: true }));
+    
     const formData = new FormData();
     formData.append('documentType', doc.type);
     formData.append('userId', userId.toString());
@@ -111,6 +117,8 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
     }
     
     try {
+      console.log(`Uploading ${doc.type}...`);
+      
       const response = await fetch('/api/dashboard/documents/upload', {
         method: 'POST',
         body: formData
@@ -119,50 +127,73 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
       const data = await response.json();
       
       if (data.success) {
+        console.log(`Successfully uploaded ${doc.type}`);
         const updatedDocs = [...documents];
         updatedDocs[index] = { ...doc, uploaded: true, filePath: data.filePath };
         setDocuments(updatedDocs);
         return true;
       } else {
+        console.error(`Failed to upload ${doc.type}:`, data.error);
         setErrorMsg(data.error || `Failed to upload ${doc.name}`);
         return false;
       }
     } catch (err) {
-      setErrorMsg(`Error uploading ${doc.name}`);
+      console.error(`Error uploading ${doc.type}:`, err);
+      setErrorMsg(`Error uploading ${doc.name}: ${err instanceof Error ? err.message : 'Unknown error'}`);
       return false;
+    } finally {
+      setUploadProgress(prev => ({ ...prev, [doc.type]: false }));
     }
   };
 
   const handleUploadAll = async () => {
-    const missingFiles = documents.filter(doc => doc.required && !doc.file && !doc.uploaded);
-    if (missingFiles.length > 0) {
-      warning(`Please upload: ${missingFiles.map(d => d.name).join(", ")}`);
+    // Check which documents need to be uploaded
+    const documentsToUpload = documents.filter(doc => doc.file && !doc.uploaded);
+    const missingRequired = documents.filter(doc => doc.required && !doc.file && !doc.uploaded);
+    
+    if (missingRequired.length > 0) {
+      warning(`Please select files for: ${missingRequired.map(d => d.name).join(", ")}`);
+      return;
+    }
+    
+    if (documentsToUpload.length === 0) {
+      info("All documents are already uploaded!");
+      if (onDocumentsComplete) {
+        onDocumentsComplete();
+      }
       return;
     }
     
     setUploading(true);
-    let allSuccess = true;
+    setErrorMsg("");
+    
+    let successCount = 0;
+    let failCount = 0;
     
     for (let i = 0; i < documents.length; i++) {
       const doc = documents[i];
       if (doc.file && !doc.uploaded) {
         const successUpload = await uploadDocument(doc, i);
-        if (!successUpload) {
-          allSuccess = false;
-          toastError(`Failed to upload ${doc.name}. Please try again.`);
-          break;
+        if (successUpload) {
+          successCount++;
+        } else {
+          failCount++;
+          toastError(`Failed to upload ${doc.name}.`);
+          break; // Stop on first failure
         }
       }
     }
     
-    if (allSuccess) {
-      success("✅ All documents uploaded successfully!");
+    if (failCount === 0 && successCount > 0) {
+      success(`✅ Successfully uploaded ${successCount} document(s)!`);
       setMessage("All documents uploaded successfully!");
       onUpdate();
       if (onDocumentsComplete) {
         onDocumentsComplete();
       }
       setTimeout(() => setMessage(""), 3000);
+    } else if (successCount > 0 && failCount > 0) {
+      warning(`⚠️ Uploaded ${successCount} document(s), but ${failCount} failed.`);
     }
     
     setUploading(false);
@@ -182,6 +213,31 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Get document icon based on type
+  const getDocumentIcon = (type: string) => {
+    const icons: Record<string, string> = {
+      introduction_letter: "📄",
+      application_letter: "📝",
+      cv: "📑",
+      insurance: "🛡️",
+      id_card: "🪪",
+      police_clearance: "👮",
+      transcripts: "📊"
+    };
+    return icons[type] || "📎";
+  };
+
+  // Get document description
+  const getDocumentDescription = (type: string) => {
+    const descriptions: Record<string, string> = {
+      police_clearance: "Valid Police Clearance Certificate (Certificate of Good Conduct)",
+      transcripts: "Official academic transcripts from your institution"
+    };
+    return descriptions[type];
+  };
+
+  const isUploading = uploadProgress[documents.find(d => d.file && !d.uploaded)?.type || ''] || false;
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -191,7 +247,7 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
           </h3>
           <p className="text-sm text-gray-500 mt-1">
             Please upload all the required documents for your attachment application.
-            All documents marked with * are mandatory.
+            All documents marked with <span className="text-red-500">*</span> are mandatory.
           </p>
           <div className="mt-2 text-xs text-gray-400">
             <span>📄 Accepted format: PDF only</span>
@@ -216,9 +272,17 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
             <div key={doc.type} className={`border rounded-lg p-4 transition ${getFileInputColor(doc)}`}>
               <div className="flex flex-wrap justify-between items-start gap-4">
                 <div className="flex-1">
-                  <label className="font-medium text-gray-800">
-                    {doc.name} {doc.required && <span className="text-red-500">*</span>}
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getDocumentIcon(doc.type)}</span>
+                    <label className="font-medium text-gray-800">
+                      {doc.name} {doc.required && <span className="text-red-500">*</span>}
+                    </label>
+                  </div>
+                  {getDocumentDescription(doc.type) && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {getDocumentDescription(doc.type)}
+                    </p>
+                  )}
                   {doc.uploaded && (
                     <p className="text-xs text-green-600 mt-1">✓ Document uploaded</p>
                   )}
@@ -233,6 +297,7 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
                       accept=".pdf"
                       onChange={(e) => handleFileChange(index, e.target.files?.[0] || null)}
                       className="text-sm text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      disabled={uploading}
                     />
                   ) : (
                     <div className="flex items-center gap-2">
@@ -244,6 +309,7 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
                           setDocuments(updatedDocs);
                         }}
                         className="text-sm text-red-600 hover:text-red-800"
+                        disabled={uploading}
                       >
                         Replace
                       </button>
@@ -254,6 +320,14 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
               {doc.file && !doc.uploaded && (
                 <div className="mt-2 text-xs text-blue-600">
                   Selected: {doc.file.name} ({formatFileSize(doc.file.size)})
+                </div>
+              )}
+              {uploadProgress[doc.type] && (
+                <div className="mt-2">
+                  <div className="flex items-center gap-2 text-xs text-green-600">
+                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-green-600 border-t-transparent"></div>
+                    Uploading...
+                  </div>
                 </div>
               )}
             </div>
@@ -287,6 +361,8 @@ export default function DocumentsRequired({ userId, onUpdate, preselectedPositio
           <li>• CV should be up to date and include relevant experience</li>
           <li>• Insurance cover must be valid for the attachment period</li>
           <li>• ID/Passport should be clearly visible</li>
+          <li>• Police Clearance Certificate must be valid (less than 1 year old)</li>
+          <li>• Transcripts should be official academic records</li>
           <li>• All documents must be in <strong>PDF format</strong></li>
           <li>• Maximum file size per document is <strong>5MB</strong></li>
         </ul>

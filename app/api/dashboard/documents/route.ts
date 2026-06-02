@@ -14,10 +14,28 @@ export async function GET(request: Request) {
     }
     
     const documents = await query(`
-      SELECT document_id, document_type, document_name, file_path, file_size, file_type, uploaded_at
+      SELECT 
+        document_id, 
+        document_type, 
+        document_name, 
+        file_path, 
+        file_size, 
+        file_type, 
+        uploaded_at,
+        is_verified
       FROM user_documents
       WHERE user_id = @userId
-      ORDER BY uploaded_at DESC
+      ORDER BY 
+        CASE document_type
+          WHEN 'introduction_letter' THEN 1
+          WHEN 'application_letter' THEN 2
+          WHEN 'cv' THEN 3
+          WHEN 'insurance' THEN 4
+          WHEN 'id_card' THEN 5
+          WHEN 'police_clearance' THEN 6
+          WHEN 'transcripts' THEN 7
+          ELSE 8
+        END
     `, [{ name: 'userId', value: parseInt(userId) }]);
     
     return NextResponse.json({
