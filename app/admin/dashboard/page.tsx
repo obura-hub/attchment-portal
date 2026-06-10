@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
+import InactivityWarningModal from "@/components/InactivityWarningModal";
 import ApplicationsManager from "@/components/admin/ApplicationsManager";
 import PositionsManager from "@/components/admin/PositionsManager";
 import ReportsManager from "@/components/admin/ReportsManager";
@@ -348,6 +349,8 @@ export default function AdminDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [admin, setAdmin] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState("");
+  const [showWarning, setShowWarning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalApplications: 0,
@@ -359,6 +362,135 @@ export default function AdminDashboard() {
     openPositions: 0
   });
 
+  // Warning timer ref
+  const warningTimerRef = useState<NodeJS.Timeout | null>(null);
+  const countdownRef = useState<NodeJS.Timeout | null>(null);
+
+  // Custom logout handler
+  const handleAutoLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminData');
+      router.push('/admin/login');
+    }
+  };
+
+  // Reset all timers
+  const resetTimers = () => {
+    // Clear warning timer
+    if (warningTimerRef[0]) {
+      clearTimeout(warningTimerRef[0]);
+      warningTimerRef[1](null);
+    }
+    // Clear countdown
+    if (countdownRef[0]) {
+      clearInterval(countdownRef[0]);
+      countdownRef[1](null);
+    }
+    setShowWarning(false);
+    setTimeLeft(60);
+  };
+
+  // Set up inactivity timer (1 minute = 60 seconds)
+  useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+    
+    const startInactivityTimer = () => {
+      // Clear existing timer
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      
+      // Set new timer - show warning after 50 seconds (10 seconds before logout)
+      inactivityTimer = setTimeout(() => {
+        setShowWarning(true);
+        
+        // Start countdown
+        const countdown = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(countdown);
+              handleAutoLogout();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        countdownRef[1](countdown);
+      }, 50 * 1000); // Show warning after 50 seconds
+      
+      warningTimerRef[1](inactivityTimer);
+    };
+    
+    // Reset timer on user activity
+    const handleActivity = () => {
+      resetTimers();
+      startInactivityTimer();
+    };
+    
+    // Start timer
+    startInactivityTimer();
+    
+    // Add event listeners
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove'];
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+    
+    return () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      resetTimers();
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, []);
+
+  // Handle stay logged in
+  const handleStayLoggedIn = () => {
+    resetTimers();
+    // Restart inactivity timer
+    const startTimer = () => {
+      const timer = setTimeout(() => {
+        setShowWarning(true);
+        const countdown = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(countdown);
+              handleAutoLogout();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        countdownRef[1](countdown);
+      }, 50 * 1000);
+      warningTimerRef[1](timer);
+    };
+    startTimer();
+  };
+
+  // Handle manual logout
+  const handleLogout = async () => {
+    resetTimers();
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      success("👋 Logged out successfully!");
+    } catch (err) {
+      console.error('Logout error:', err);
+      toastError("Failed to logout");
+    } finally {
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminData');
+      setTimeout(() => {
+        router.push('/admin/login');
+      }, 1000);
+    }
+  };
+
+  // Rest of your component (fetchStats, etc.)
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
     if (!isLoggedIn) {
@@ -372,7 +504,11 @@ export default function AdminDashboard() {
     fetchStats();
     
     const date = new Date();
-    setCurrentDate(date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+    setCurrentDate(date.toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }));
   }, []);
 
   const fetchStats = async () => {
@@ -384,22 +520,6 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/logout', { method: 'POST' });
-      success("👋 Logged out successfully!");
-    } catch (err) {
-      console.error('Logout error:', err);
-      toastError("Failed to logout");
-    } finally {
-      localStorage.removeItem('adminLoggedIn');
-      localStorage.removeItem('adminData');
-      setTimeout(() => {
-        router.push('/admin/login');
-      }, 1000);
     }
   };
 
@@ -419,28 +539,37 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
-      <div className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                {activeMenu === "dashboard" ? "Dashboard" : 
-                 activeMenu === "applications" ? "Applications Management" :
-                 activeMenu === "documents" ? "Documents Viewer" :
-                 activeMenu === "reports" ? "Reports & Export" : "Positions Management"}
-              </h1>
-      
+    <>
+      <InactivityWarningModal 
+        isOpen={showWarning}
+        timeLeft={timeLeft}
+        onStayLoggedIn={handleStayLoggedIn}
+        onLogout={handleLogout}
+      />
+      <div className="min-h-screen bg-gray-100 flex">
+        {/* Rest of your dashboard JSX */}
+        <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
+        <div className="flex-1 flex flex-col">
+          <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  {activeMenu === "dashboard" ? "Dashboard" : 
+                   activeMenu === "applications" ? "Applications Management" :
+                   activeMenu === "documents" ? "Documents Viewer" :
+                   activeMenu === "reports" ? "Reports & Export" : "Positions Management"}
+                </h1>
+                <p className="text-sm text-gray-500">{currentDate} | FY 2025/26</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-gray-600">Welcome, {admin?.full_name || 'Admin'}</span>
+                <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">Logout</button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-600">Welcome, {admin?.full_name || 'Admin'}</span>
-              <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">Logout</button>
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 p-6">{renderContent()}</main>
+          </header>
+          <main className="flex-1 p-6">{renderContent()}</main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
