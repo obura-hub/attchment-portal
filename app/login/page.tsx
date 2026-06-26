@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -89,44 +90,31 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top Bar */}
-      <div className="bg-gray-900 text-gray-300 text-sm py-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <span>📞 0208000325/326</span>
-            <span>✉️ cpsb@nairobi.go.ke</span>
-          </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/faq" className="hover:text-white">FAQ</Link>
-            <Link href="/contact" className="hover:text-white">Contact</Link>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 md:py-4">
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-12 h-12 bg-green-800 rounded-lg flex items-center justify-center shadow-md group-hover:bg-green-700 transition">
-                <span className="text-white text-lg font-bold">NCC</span>
+            <Link href="/" className="flex items-center space-x-3">
+              {/* Logo Image */}
+              <div className="relative">
+                <Image 
+                  src="/logo.jpg" 
+                  alt="Nairobi City County Logo" 
+                  width={48} 
+                  height={48}
+                  className="object-contain"
+                  priority
+                />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-base md:text-lg font-bold text-green-800 leading-tight">
-                  Nairobi City County
-                </h1>
-                <p className="text-xs text-gray-500">
-                  Student Attachment Application Portal
-                </p>
+                <h1 className="text-base md:text-xl font-bold text-green-800">Nairobi City County</h1>
+                <p className="text-xs text-gray-600">Student Attachment Application Portal</p>
               </div>
             </Link>
             
             <nav className="hidden md:flex space-x-6 lg:space-x-8">
               <Link href="/" className="text-gray-700 hover:text-green-700 font-medium transition">
                 Home
-              </Link>
-              <Link href="/opportunities" className="text-gray-700 hover:text-green-700 font-medium transition">
-                Opportunities
               </Link>
               <Link href="/register" className="text-gray-700 hover:text-green-700 font-medium transition">
                 Register
@@ -135,6 +123,17 @@ export default function LoginPage() {
                 Login
               </Link>
             </nav>
+            
+            <Link href="/login" className="hidden md:block bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition text-sm">
+              Apply Now
+            </Link>
+            
+            {/* Mobile menu button */}
+            <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
@@ -273,7 +272,7 @@ export default function LoginPage() {
       <footer className="bg-gray-900 text-gray-400 pt-8 pb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="border-t border-gray-800 pt-6 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} Nairobi City County Government. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Nairobi City County Government. All rights reserved. Powered by SMART Nairobi</p>
           </div>
         </div>
       </footer>

@@ -15,10 +15,14 @@ export async function GET(request: Request) {
     
     console.log(`Fetching documents for user ID: ${userId}`);
     
+    // Fix: Use proper number conversion
+    const userIdNum = parseInt(userId, 10);
+    
     // First, check if user exists
+    // @ts-ignore
     const userCheck = await query(
       `SELECT id, first_name, surname, email FROM Registration WHERE id = @userId`,
-      [{ name: 'userId', value: parseInt(userId) }]
+      [{ name: 'userId', value: userIdNum }]
     );
     
     if (!userCheck || userCheck.length === 0) {
@@ -45,24 +49,27 @@ export async function GET(request: Request) {
         verified_at
       FROM user_documents
       WHERE user_id = @userId
-      ORDER BY 
-        CASE document_type
-          WHEN 'introduction_letter' THEN 1
-          WHEN 'application_letter' THEN 2
-          WHEN 'cv' THEN 3
-          WHEN 'insurance' THEN 4
-          WHEN 'id_card' THEN 5
-          WHEN 'police_clearance' THEN 6
-          WHEN 'transcripts' THEN 7
-          ELSE 8
-        END
-    `, [{ name: 'userId', value: parseInt(userId) }]);
+      ORDER BY uploaded_at DESC
+    `, [{ name: 'userId', value: userIdNum }]);
     
     console.log(`Found ${documents?.length || 0} documents for user ${userId}`);
     
+    // Format documents
+    const formattedDocuments = (documents || []).map((doc: any) => ({
+      document_id: doc.document_id,
+      document_type: doc.document_type,
+      document_name: doc.document_name,
+      file_path: doc.file_path,
+      file_size: doc.file_size,
+      file_type: doc.file_type,
+      uploaded_at: doc.uploaded_at,
+      is_verified: doc.is_verified,
+      display_name: getDocumentDisplayName(doc.document_type)
+    }));
+    
     return NextResponse.json({
       success: true,
-      documents: documents || [],
+      documents: formattedDocuments,
       user: userCheck[0]
     });
     

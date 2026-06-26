@@ -39,6 +39,7 @@ export default function RegisterPage() {
     
     // Education Information (Step 4)
     educationLevel: "",
+    institutionName: "", // New field for University/College
     fieldOfStudy: "",
     graduationDate: "",
     isPwd: false,
@@ -127,6 +128,7 @@ export default function RegisterPage() {
   const validateStep4 = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.educationLevel) newErrors.educationLevel = "Education level is required";
+    if (!formData.institutionName.trim()) newErrors.institutionName = "University/College name is required";
     if (!formData.fieldOfStudy.trim()) newErrors.fieldOfStudy = "Field of study is required";
     
     setErrors(newErrors);
@@ -170,97 +172,79 @@ export default function RegisterPage() {
     }
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!validateStep5()) return;
-  
-  setIsSubmitting(true);
-  
-  try {
-    const response = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const result = await response.json();
+    if (!validateStep5()) return;
     
-    if (result.success) {
-      // Store user email for the success page
-      if (result.user) {
-        localStorage.setItem('user', JSON.stringify(result.user));
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Store user email for the success page
+        if (result.user) {
+          localStorage.setItem('user', JSON.stringify(result.user));
+        }
+        router.push('/register/success');
+      } else {
+        setErrors({ submit: result.error || "Registration failed. Please try again." });
       }
-      router.push('/register/success');
-    } else {
-      setErrors({ submit: result.error || "Registration failed. Please try again." });
+    } catch (error) {
+      setErrors({ submit: "Network error. Please check your connection." });
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    setErrors({ submit: "Network error. Please check your connection." });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Bar - County Theme */}
-      <div className="bg-gray-900 text-gray-300 text-sm py-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <span>📞 0208000325/326</span>
-            <span>✉️ cpsb@nairobi.go.ke</span>
-          </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/faq" className="hover:text-white">FAQ</Link>
-            <Link href="/contact" className="hover:text-white">Contact</Link>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
-
-<header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="flex justify-between items-center py-3 md:py-4">
-      <Link href="/" className="flex items-center space-x-3">
-        {/* Logo Image */}
-        <div className="relative">
-          <Image 
-            src="/logo.jpg" 
-            alt="Nairobi City County Logo" 
-            width={48} 
-            height={48}
-            className="object-contain"
-            priority
-          />
+      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-3 md:py-4">
+            <Link href="/" className="flex items-center space-x-3">
+              <div className="relative">
+                <Image 
+                  src="/logo.jpg" 
+                  alt="Nairobi City County Logo" 
+                  width={48} 
+                  height={48}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-base md:text-xl font-bold text-green-800">Nairobi City County</h1>
+                <p className="text-xs text-gray-600">Student Attachment Application Portal</p>
+              </div>
+            </Link>
+            
+            <nav className="hidden md:flex space-x-6 lg:space-x-8">
+              <Link href="/" className="text-gray-700 hover:text-green-700 font-medium">Home</Link>
+              <Link href="/register" className="text-green-700 font-medium border-b-2 border-green-700">Register</Link>
+              <Link href="/login" className="text-gray-700 hover:text-green-700 font-medium">Login</Link>
+            </nav>
+            
+            <Link href="/login" className="hidden md:block bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition text-sm">
+              Apply Now
+            </Link>
+            
+            <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="hidden sm:block">
-          <h1 className="text-base md:text-xl font-bold text-green-800">Nairobi City County</h1>
-          <p className="text-xs text-gray-600">Student Attachment Application Portal</p>
-        </div>
-      </Link>
-      
-      <nav className="hidden md:flex space-x-6 lg:space-x-8">
-        <Link href="/" className="text-gray-700 hover:text-green-700 font-medium">Home</Link>
-        <Link href="/opportunities" className="text-gray-700 hover:text-green-700 font-medium">Opportunities</Link>
-        <Link href="/register" className="text-green-700 font-medium border-b-2 border-green-700">Register</Link>
-        <Link href="/login" className="text-gray-700 hover:text-green-700 font-medium">Login</Link>
-      </nav>
-      
-      <Link href="/login" className="hidden md:block bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition text-sm">
-        Apply Now
-      </Link>
-      
-      {/* Mobile menu button */}
-      <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-    </div>
-  </div>
-</header>
+      </header>
 
       {/* Hero Banner */}
       <section className="relative bg-gradient-to-r from-green-900 to-green-800 text-white py-12">
@@ -273,7 +257,7 @@ export default function RegisterPage() {
             Nairobi City County Government - Student Industrial Attachment Program 2025/2026
           </p>
           <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
-            <span>⏰</span> Application Deadline: July 30, 2025
+            <span>⏰</span> Application Deadline: July 30, 2026
           </div>
         </div>
       </section>
@@ -509,6 +493,51 @@ export default function RegisterPage() {
                       <option value="Meru">Meru</option>
                       <option value="Turkana">Turkana</option>
                       <option value="Maasai">Maasai</option>
+                      <option value="Embu">Embu</option>
+                      <option value="Taita">Taita</option>
+                      <option value="Taveta">Taveta</option>
+                      <option value="Pokot">Pokot</option>
+                      <option value="Samburu">Samburu</option>
+                      <option value="Borana">Borana</option>
+                      <option value="Rendille">Rendille</option>
+                      <option value="Somali">Somali</option>
+                      <option value="Orma">Orma</option>
+                      <option value="Gabra">Gabra</option>
+                      <option value="Burji">Burji</option>
+                      <option value="Konso">Konso</option>
+                      <option value="Sakuye">Sakuye</option>
+                      <option value="Ajuran">Ajuran</option>
+                      <option value="Dasanach">Dasanach</option>
+                      <option value="Elmolo">Elmolo</option>
+                      <option value="Bajuni">Bajuni</option>
+                      <option value="Swahili">Swahili</option>
+                      <option value="Teso">Teso</option>
+                      <option value="Kuria">Kuria</option>
+                      <option value="Suba">Suba</option>
+                      <option value="Tharaka">Tharaka</option>
+                      <option value="Mbeere">Mbeere</option>
+                      <option value="Chuka">Chuka</option>
+                      <option value="Mwimbi">Mwimbi</option>
+                      <option value="Muthambi">Muthambi</option>
+                      <option value="Ameru">Ameru</option>
+                      <option value="Sabaot">Sabaot</option>
+                      <option value="Keiyo">Keiyo</option>
+                      <option value="Marakwet">Marakwet</option>
+                      <option value="Nandi">Nandi</option>
+                      <option value="Kipsigis">Kipsigis</option>
+                      <option value="Tugen">Tugen</option>
+                      <option value="Terik">Terik</option>
+                      <option value="Ogiek">Ogiek</option>
+                      <option value="Endorois">Endorois</option>
+                      <option value="Waata">Waata</option>
+                      <option value="Aweer">Aweer</option>
+                      <option value="Segeju">Segeju</option>
+                      <option value="Shona">Shona</option>
+                      <option value="Makonde">Makonde</option>
+                      <option value="Nubian">Nubian</option>
+                      <option value="Asian Kenyan">Asian Kenyan</option>
+                      <option value="Arab Kenyan">Arab Kenyan</option>
+                      <option value="European Kenyan">European Kenyan</option>
                       <option value="Other">Other</option>
                     </select>
                     {errors.ethnicity && <p className="text-red-500 text-xs mt-1">{errors.ethnicity}</p>}
@@ -537,10 +566,17 @@ export default function RegisterPage() {
                     {errors.educationLevel && <p className="text-red-500 text-xs mt-1">{errors.educationLevel}</p>}
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">University/College Of Study <span className="text-red-500">*</span></label>
+                    <input type="text" name="institutionName" value={formData.institutionName} onChange={handleChange}
+                      placeholder="e.g., University of Nairobi, Kenyatta University"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    {errors.institutionName && <p className="text-red-500 text-xs mt-1">{errors.institutionName}</p>}
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Field of Study <span className="text-red-500">*</span></label>
                     <input type="text" name="fieldOfStudy" value={formData.fieldOfStudy} onChange={handleChange}
                       placeholder="e.g., Computer Science, Business Administration"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500" />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
                     {errors.fieldOfStudy && <p className="text-red-500 text-xs mt-1">{errors.fieldOfStudy}</p>}
                   </div>
                   <div>
@@ -647,7 +683,7 @@ export default function RegisterPage() {
       <footer className="bg-gray-900 text-gray-400 pt-8 pb-6 mt-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="border-t border-gray-800 pt-6 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} Nairobi City County Government. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Nairobi City County Government. All rights reserved. Powered by SMART Nairobi</p>
           </div>
         </div>
       </footer>

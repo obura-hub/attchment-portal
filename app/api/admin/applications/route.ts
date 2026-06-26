@@ -23,11 +23,13 @@ export async function GET(request: Request) {
         r.phone_number as student_phone,
         r.education_level,
         r.field_of_study,
-        r.id_number
+        r.id_number,
+        CASE WHEN al.letter_id IS NOT NULL THEN 1 ELSE 0 END as has_attachment_letter
       FROM applications a
       JOIN positions p ON a.position_id = p.position_id
       JOIN departments d ON p.department_id = d.department_id
       JOIN Registration r ON a.user_id = r.id
+      LEFT JOIN attachment_letters al ON a.application_id = al.application_id AND al.is_active = 1
       ORDER BY a.application_date DESC
     `);
     
@@ -45,6 +47,7 @@ export async function GET(request: Request) {
       application_date: app.application_date,
       status: app.status,
       cover_letter: app.cover_letter,
+      has_attachment_letter: app.has_attachment_letter || 0,
       documents_count: 0
     }));
     

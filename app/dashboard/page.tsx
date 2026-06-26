@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import InactivityWarningModal from "@/components/InactivityWarningModal";
 import ProfileManagement from "@/components/dashboard/ProfileManagement";
 import OpportunitiesList from "@/components/dashboard/OpportunitiesList";
@@ -209,8 +210,8 @@ export default function DashboardPage() {
         <div className="bg-gray-900 text-gray-300 text-sm py-2">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <span>📞 0208000325/326</span>
-              <span>✉️ cpsb@nairobi.go.ke</span>
+              {/* <span>📞 0208000325/326</span>
+              <span>✉️ cpsb@nairobi.go.ke</span> */}
             </div>
             <div className="hidden md:flex items-center space-x-4">
               <span className="text-green-400">Welcome, {user?.name || user?.firstName || 'Student'}</span>
@@ -221,19 +222,38 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Header */}
+        {/* Header with Logo */}
         <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-3 md:py-4">
               <Link href="/dashboard" className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-green-800 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-lg font-bold">NCC</span>
+                {/* Logo Image */}
+                <div className="relative">
+                  <Image 
+                    src="/logo.jpg" 
+                    alt="Nairobi City County Logo" 
+                    width={48} 
+                    height={48}
+                    className="object-contain"
+                    priority
+                  />
                 </div>
-                <div>
-                  <h1 className="text-base md:text-lg font-bold text-green-800">Nairobi City County</h1>
-                  <p className="text-xs text-gray-500">Student Dashboard</p>
+                <div className="hidden sm:block">
+                  <h1 className="text-base md:text-xl font-bold text-green-800">Nairobi City County</h1>
+                  <p className="text-xs text-gray-600">Student Dashboard</p>
                 </div>
               </Link>
+{/*               
+              <Link href="/login" className="hidden md:block bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition text-sm">
+                Apply Now
+              </Link>
+               */}
+              {/* Mobile menu button */}
+              <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
           </div>
         </header>
@@ -336,7 +356,7 @@ export default function DashboardPage() {
         <footer className="bg-gray-900 text-gray-400 pt-8 pb-6 mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="border-t border-gray-800 pt-6 text-center text-sm">
-              <p>&copy; {new Date().getFullYear()} Nairobi City County Government. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Nairobi City County Government. All rights reserved. Powered by SMART Nairobi</p>
             </div>
           </div>
         </footer>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 
 interface Department {
@@ -45,7 +46,7 @@ export default function Home() {
   const [stats, setStats] = useState({
     totalDepartments: 0,
     totalPositions: 0,
-    applicationDeadline: "July 30, 2025"
+    applicationDeadline: "July 30, 2026"
   });
 
   // Fetch departments from API
@@ -70,7 +71,7 @@ export default function Home() {
         setStats({
           totalDepartments: departmentsWithIcons.length,
           totalPositions: totalPositions,
-          applicationDeadline: "July 30, 2025"
+          applicationDeadline: "July 30, 2026"
         });
       }
     } catch (error) {
@@ -108,7 +109,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Top Bar */}
-      <div className="bg-gray-900 text-gray-300 text-sm py-2">
+      {/* <div className="bg-gray-900 text-gray-300 text-sm py-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <span>📞 0208000325/326</span>
@@ -119,29 +120,46 @@ export default function Home() {
             <Link href="/contact" className="hover:text-white">Contact</Link>
           </div>
         </div>
-      </div>
+      </div> */}
 
-      {/* Header with Navigation */}
+      {/* Header with Navigation - Updated to match Register Page */}
       <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="text-3xl">🏛️</div>
-              <div>
-                <h1 className="text-xl font-bold text-green-800">Nairobi City County</h1>
+          <div className="flex justify-between items-center py-3 md:py-4">
+            <Link href="/" className="flex items-center space-x-3">
+              {/* Logo Image */}
+              <div className="relative">
+                <Image 
+                  src="/logo.jpg" 
+                  alt="Nairobi City County Logo" 
+                  width={48} 
+                  height={48}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-base md:text-xl font-bold text-green-800">Nairobi City County</h1>
                 <p className="text-xs text-gray-600">Student Attachment Application Portal</p>
               </div>
-            </div>
+            </Link>
             
-            <nav className="hidden md:flex space-x-8">
-              <Link href="/" className="text-gray-700 hover:text-green-700 font-medium">Home</Link>
+            <nav className="hidden md:flex space-x-6 lg:space-x-8">
+              <Link href="/" className="text-green-700 font-medium border-b-2 border-green-700">Home</Link>
               <Link href="/register" className="text-gray-700 hover:text-green-700 font-medium">Register</Link>
               <Link href="/login" className="text-gray-700 hover:text-green-700 font-medium">Login</Link>
             </nav>
             
-            <Link href="/login" className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition">
+            <Link href="/login" className="hidden md:block bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition text-sm">
               Apply Now
             </Link>
+            
+            {/* Mobile menu button */}
+            <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
@@ -382,10 +400,10 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr><td className="px-6 py-4 text-sm text-gray-900">Application Opening</td><td className="px-6 py-4 text-sm text-gray-600">June 1, 2025</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Open</span></td></tr>
-                <tr><td className="px-6 py-4 text-sm text-gray-900">Application Deadline</td><td className="px-6 py-4 text-sm text-gray-600">July 30, 2025</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Upcoming</span></td></tr>
-                <tr><td className="px-6 py-4 text-sm text-gray-900">Shortlisting & Interviews</td><td className="px-6 py-4 text-sm text-gray-600">August 15-30, 2025</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Pending</span></td></tr>
-                <tr><td className="px-6 py-4 text-sm text-gray-900">Attachment Period</td><td className="px-6 py-4 text-sm text-gray-600">September - November 2025</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Pending</span></td></tr>
+                <tr><td className="px-6 py-4 text-sm text-gray-900">Application Opening</td><td className="px-6 py-4 text-sm text-gray-600">June 1, 2026</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Open</span></td></tr>
+                <tr><td className="px-6 py-4 text-sm text-gray-900">Application Deadline</td><td className="px-6 py-4 text-sm text-gray-600">July 30, 2026</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Upcoming</span></td></tr>
+                <tr><td className="px-6 py-4 text-sm text-gray-900">Shortlisting & Interviews</td><td className="px-6 py-4 text-sm text-gray-600">August 15-30, 2026</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Pending</span></td></tr>
+                <tr><td className="px-6 py-4 text-sm text-gray-900">Attachment Period</td><td className="px-6 py-4 text-sm text-gray-600">September - November 2026</td><td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Pending</span></td></tr>
               </tbody>
             </table>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/context/ToastContext";
 
 interface Application {
   application_id: number;
@@ -14,21 +15,22 @@ interface Application {
   application_date: string;
   status: string;
   cover_letter: string;
+  user_id: number;
 }
 
-interface ApplicationsManagerProps {
-  onUpdate: () => void;
-}
-
-export default function ApplicationsManager({ onUpdate }: ApplicationsManagerProps) {
+export default function ApplicationsManager({ onUpdate }: { onUpdate: () => void }) {
+  const { success, error: toastError, warning } = useToast(); // Removed 'info'
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [comments, setComments] = useState("");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchApplications();
@@ -40,9 +42,10 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
       const data = await response.json();
       if (data.success) {
         setApplications(data.applications);
+        // Removed the info toast notification
       }
-    } catch (error) {
-      console.error('Error fetching applications:', error);
+    } catch (err) {
+      toastError('Failed to fetch applications');
     } finally {
       setLoading(false);
     }
@@ -65,15 +68,79 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
       const data = await response.json();
 
       if (data.success) {
-        alert(`Application ${newStatus} successfully!`);
-        setShowModal(false);
+        const statusIcons: Record<string, string> = {
+          'Pending': '⏳',
+          'Shortlisted': '⭐',
+          'Accepted': '✅',
+          'Rejected': '❌'
+        };
+        success(`${statusIcons[newStatus] || '📝'} Application ${newStatus} successfully!`);
+        setShowStatusModal(false);
+        setComments("");
+        
+        // If status is Accepted, open attachment upload modal
+        if (newStatus === 'Accepted') {
+          setShowAttachmentModal(true);
+        }
+        
         fetchApplications();
         onUpdate();
       } else {
-        alert(data.error || "Failed to update status");
+        toastError(data.error || "Failed to update status");
       }
-    } catch (error) {
-      alert("Error updating status");
+    } catch (err) {
+      toastError("Error updating status");
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== 'application/pdf') {
+        toastError('Please upload a PDF file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toastError('File size must be less than 5MB');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!selectedApp || !selectedFile) {
+      toastError('Please select a file to upload');
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('applicationId', selectedApp.application_id.toString());
+    formData.append('userId', selectedApp.user_id.toString());
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await fetch('/api/admin/applications/upload-attachment', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        success('📎 Attachment letter uploaded successfully!');
+        setShowAttachmentModal(false);
+        setSelectedFile(null);
+        fetchApplications();
+        onUpdate();
+      } else {
+        toastError(data.error || 'Failed to upload attachment');
+      }
+    } catch (err) {
+      toastError('Error uploading attachment');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -111,7 +178,7 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
               onClick={() => setFilter("all")}
               className={`px-3 py-1 rounded ${filter === "all" ? "bg-gray-800 text-white" : "bg-gray-200"}`}
             >
-              All
+              All ({applications.length})
             </button>
             <button
               onClick={() => setFilter("pending")}
@@ -186,7 +253,7 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
                     onClick={() => {
                       setSelectedApp(app);
                       setNewStatus(app.status);
-                      setShowModal(true);
+                      setShowStatusModal(true);
                     }}
                     className="bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800 text-sm"
                   >
@@ -200,7 +267,7 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
       </div>
 
       {/* Status Update Modal */}
-      {showModal && selectedApp && (
+      {showStatusModal && selectedApp && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-xl font-bold mb-4">Update Application Status</h3>
@@ -216,10 +283,10 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
                 onChange={(e) => setNewStatus(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2"
               >
-                <option value="Pending">Pending</option>
-                <option value="Shortlisted">Shortlisted</option>
-                <option value="Accepted">Accepted</option>
-                <option value="Rejected">Rejected</option>
+                <option value="Pending">⏳ Pending</option>
+                <option value="Shortlisted">⭐ Shortlisted</option>
+                <option value="Accepted">✅ Accepted</option>
+                <option value="Rejected">❌ Rejected</option>
               </select>
             </div>
 
@@ -239,13 +306,63 @@ export default function ApplicationsManager({ onUpdate }: ApplicationsManagerPro
                 onClick={handleStatusChange}
                 className="flex-1 bg-green-700 text-white py-2 rounded hover:bg-green-800"
               >
-                Update
+                Update Status
               </button>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => setShowStatusModal(false)}
                 className="flex-1 border border-gray-300 py-2 rounded hover:bg-gray-50"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attachment Upload Modal */}
+      {showAttachmentModal && selectedApp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">📎 Upload Attachment Letter</h3>
+            <p className="text-gray-600 mb-4">
+              Student: <strong>{selectedApp.student_name}</strong><br />
+              Position: <strong>{selectedApp.position_title}</strong>
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Please upload the attachment letter in PDF format (Max 5MB)
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Select PDF File</label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+              {selectedFile && (
+                <p className="text-sm text-green-600 mt-2">
+                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleUploadAttachment}
+                disabled={uploading || !selectedFile}
+                className="flex-1 bg-green-700 text-white py-2 rounded hover:bg-green-800 disabled:opacity-50"
+              >
+                {uploading ? "Uploading..." : "Upload Letter"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowAttachmentModal(false);
+                  setSelectedFile(null);
+                }}
+                className="flex-1 border border-gray-300 py-2 rounded hover:bg-gray-50"
+              >
+                Skip
               </button>
             </div>
           </div>

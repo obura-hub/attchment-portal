@@ -20,16 +20,20 @@ interface Application {
   status_updated_date: string;
   attachment_duration_weeks: number;
   application_deadline: string;
+  has_attachment?: boolean;
+  attachment_file_path?: string;
+  attachment_file_name?: string;
 }
 
 export default function ApplicationManagement({ user, userId, onUpdate }: ApplicationManagementProps) {
-  const { success, error } = useToast();
+  const { success, error: toastError, info } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [withdrawReason, setWithdrawReason] = useState("");
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   useEffect(() => {
     if (userId) {
       fetchApplications();
@@ -78,10 +82,26 @@ export default function ApplicationManagement({ user, userId, onUpdate }: Applic
         fetchApplications();
         onUpdate();
       } else {
-        error(data.error || "Failed to withdraw application");
+        toastError(data.error || "Failed to withdraw application");
       }
-    } catch (err) {
-      error("Error withdrawing application. Please try again.");
+    } catch (error) {
+      toastError("Error withdrawing application. Please try again.");
+    }
+  };
+
+  const downloadAttachment = async (applicationId: number) => {
+    try {
+      const response = await fetch(`/api/dashboard/applications/download-attachment?applicationId=${applicationId}`);
+      const data = await response.json();
+      
+      if (data.success && data.filePath) {
+        window.open(data.filePath, '_blank');
+        success(`📥 Downloading attachment letter`);
+      } else {
+        toastError(data.error || 'No attachment letter found');
+      }
+    } catch (error) {
+      toastError('Error downloading attachment');
     }
   };
 
@@ -147,6 +167,11 @@ export default function ApplicationManagement({ user, userId, onUpdate }: Applic
                         <span>⏰ Deadline: {formatDate(app.application_deadline)}</span>
                       )}
                     </div>
+                    {app.status.toLowerCase() === 'accepted' && app.has_attachment && (
+                      <div className="mt-2">
+                        <span className="text-xs text-green-600">📎 Attachment letter available</span>
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <span className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(app.status)}`}>
@@ -158,7 +183,7 @@ export default function ApplicationManagement({ user, userId, onUpdate }: Applic
                   </div>
                 </div>
                 
-                <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100">
+                <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-gray-100">
                   <button
                     onClick={() => {
                       setSelectedApp(app);
@@ -177,6 +202,14 @@ export default function ApplicationManagement({ user, userId, onUpdate }: Applic
                       className="text-red-700 hover:text-red-800 text-sm font-medium transition"
                     >
                       Withdraw Application
+                    </button>
+                  )}
+                  {app.status.toLowerCase() === 'accepted' && app.has_attachment && (
+                    <button
+                      onClick={() => downloadAttachment(app.application_id)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition flex items-center gap-1"
+                    >
+                      📥 Download Attachment Letter
                     </button>
                   )}
                 </div>
@@ -232,24 +265,17 @@ export default function ApplicationManagement({ user, userId, onUpdate }: Applic
                   <label className="text-sm font-medium text-gray-500">Last Status Update</label>
                   <p className="text-gray-800">{formatDate(selectedApp.status_updated_date)}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Attachment Duration</label>
-                  <p className="text-gray-800">{selectedApp.attachment_duration_weeks} weeks</p>
-                </div>
-                {selectedApp.application_deadline && (
+                {selectedApp.status.toLowerCase() === 'accepted' && selectedApp.has_attachment && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Application Deadline</label>
-                    <p className="text-gray-800">{formatDate(selectedApp.application_deadline)}</p>
+                    <label className="text-sm font-medium text-gray-500">Attachment Letter</label>
+                    <button
+                      onClick={() => downloadAttachment(selectedApp.application_id)}
+                      className="mt-2 inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                      📥 Download Attachment Letter
+                    </button>
                   </div>
                 )}
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Cover Letter</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {selectedApp.cover_letter || 'No cover letter provided'}
-                    </p>
-                  </div>
-                </div>
               </div>
               
               <div className="mt-6 flex justify-end">

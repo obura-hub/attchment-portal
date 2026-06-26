@@ -22,21 +22,21 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(body.password, 10);
     
-    // Insert new user
+    // Insert new user with institution_name field
     await query(`
       INSERT INTO Registration (
         first_name, middle_name, surname, phone_number, email, 
         gender, date_of_birth, id_number, postal_address, 
         country_of_birth, county_of_birth, country_of_residence, 
         county_of_residence, citizenship, ethnicity, education_level, 
-        graduation_date, field_of_study, is_pwd, pwd_number, 
+        institution_name, graduation_date, field_of_study, is_pwd, pwd_number, 
         captcha_answer, accepted_terms, password
       ) VALUES (
         @firstName, @middleName, @surname, @phoneNumber, @email,
         @gender, @dateOfBirth, @idNumber, @postalAddress,
         @countryOfBirth, @countyOfBirth, @countryOfResidence,
         @countyOfResidence, @citizenship, @ethnicity, @educationLevel,
-        @graduationDate, @fieldOfStudy, @isPwd, @pwdNumber,
+        @institutionName, @graduationDate, @fieldOfStudy, @isPwd, @pwdNumber,
         @captchaAnswer, @acceptedTerms, @password
       )
     `, [
@@ -56,6 +56,7 @@ export async function POST(request: Request) {
       { name: 'citizenship', value: body.citizenship || 'Kenyan' },
       { name: 'ethnicity', value: body.ethnicity },
       { name: 'educationLevel', value: body.educationLevel },
+      { name: 'institutionName', value: body.institutionName || null },
       { name: 'graduationDate', value: body.graduationDate || null },
       { name: 'fieldOfStudy', value: body.fieldOfStudy },
       { name: 'isPwd', value: body.isPwd ? 1 : 0 },
@@ -65,7 +66,6 @@ export async function POST(request: Request) {
       { name: 'password', value: hashedPassword }
     ]);
     
-    // Return success with user info
     return NextResponse.json({
       success: true,
       message: 'Registration successful!',
