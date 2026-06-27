@@ -1,8 +1,3 @@
-# Create the types folder
-New-Item -ItemType Directory -Force -Path "types"
-
-# Create the declaration file
-@'
 declare module 'mssql' {
   export function connect(config: any): Promise<any>;
   export class ConnectionPool {
@@ -18,4 +13,3 @@ declare module 'mssql' {
   export const BigInt: any;
   export const NVarchar: any;
 }
-'@ | Out-File -FilePath "types/mssql.d.ts" -Encoding UTF8

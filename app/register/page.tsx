@@ -267,11 +267,11 @@ export default function RegisterPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             {[
-              { step: 1, name: "Personal", icon: "👤" },
-              { step: 2, name: "Contact", icon: "📧" },
-              { step: 3, name: "Location", icon: "📍" },
-              { step: 4, name: "Education", icon: "🎓" },
-              { step: 5, name: "Submit", icon: "✅" }
+              { step: 1, name: "Personal",icon: "👤" },
+              { step: 2, name: "Contact",icon: "📧" },
+              { step: 3, name: "Location",icon: "📍" },
+              { step: 4, name: "Education",icon: "🎓" },
+              { step: 5, name: "Submit",icon:"✅" }
             ].map((item) => (
               <div key={item.step} className="flex-1 flex items-center">
                 <div 
@@ -296,7 +296,7 @@ export default function RegisterPage() {
           </div>
           <div className="flex justify-between mt-2 text-sm">
             {["Personal", "Contact", "Location", "Education", "Submit"].map((name, idx) => (
-              <span key={idx} className={`text-center w-12 ${currentStep >= idx + 1 ? 'text-green-700 font-medium' : 'text-gray-400'}`}>
+              <span key={idx} className={`text-center w-8 ${currentStep >= idx + 1 ? 'text-green-700 font-medium' : 'text-gray-400'}`}>
                 {name}
               </span>
             ))}

@@ -342,8 +342,9 @@ function DocumentsViewer() {
 }
 
 // Attachment Letters Viewer Component - No popup message
+// Attachment Letters Viewer Component - No popup message
 function AttachmentLettersViewer() {
-  const { success, error: toastError } = useToast(); // Removed 'info'
+  const { success, error: toastError } = useToast();
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -360,8 +361,10 @@ function AttachmentLettersViewer() {
       const data = await response.json();
       if (data.success) {
         setStudents(data.students);
-        // Extract unique departments for filter
-        const depts = [...new Set(data.students.map((s: any) => s.department_name))];
+        // Extract unique departments for filter with proper typing
+        const depts = Array.from(
+          new Set(data.students.map((s: any) => String(s.department_name)))
+        ) as string[];
         setDepartments(depts);
         // Removed the info toast notification - no popup message
       }

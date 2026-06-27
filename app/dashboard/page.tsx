@@ -243,11 +243,6 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-600">Student Dashboard</p>
                 </div>
               </Link>
-{/*               
-              <Link href="/login" className="hidden md:block bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition text-sm">
-                Apply Now
-              </Link>
-               */}
               {/* Mobile menu button */}
               <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,12 +338,26 @@ export default function DashboardPage() {
             </nav>
           </div>
 
-          {/* Tab Content */}
+          {/* Tab Content - Fixed: Only render when userId is not null */}
           <div>
-            {activeTab === "profile" && <ProfileManagement user={user} userId={userId} onUpdate={fetchDashboardStats} />}
-            {activeTab === "opportunities" && <OpportunitiesList user={user} userId={userId} onApply={fetchDashboardStats} />}
-            {activeTab === "documents" && <DocumentsRequired userId={userId} onUpdate={fetchDashboardStats} />}
-            {activeTab === "applications" && <ApplicationManagement user={user} userId={userId} onUpdate={fetchDashboardStats} />}
+            {userId !== null ? (
+              <>
+                {activeTab === "profile" && <ProfileManagement user={user} userId={userId} onUpdate={fetchDashboardStats} />}
+                {activeTab === "opportunities" && <OpportunitiesList user={user} userId={userId} onApply={fetchDashboardStats} />}
+                {activeTab === "documents" && <DocumentsRequired userId={userId} onUpdate={fetchDashboardStats} />}
+                {activeTab === "applications" && <ApplicationManagement user={user} userId={userId} onUpdate={fetchDashboardStats} />}
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>Unable to load user data. Please try logging in again.</p>
+                <button 
+                  onClick={() => router.push('/login')}
+                  className="mt-4 bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition"
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

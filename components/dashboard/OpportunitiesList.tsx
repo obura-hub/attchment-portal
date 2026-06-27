@@ -90,7 +90,10 @@ export default function OpportunitiesList({ user, userId, onApply }: Opportuniti
       const response = await fetch(`/api/dashboard/applications?userId=${userId}`);
       const data = await response.json();
       if (data.success && data.applications) {
-        const appliedPositionIds = new Set(data.applications.map((app: any) => app.position_id));
+        // Fix: Use Set<number> with explicit type and convert to number
+        const appliedPositionIds = new Set<number>(
+          data.applications.map((app: any) => Number(app.position_id))
+        );
         setHasApplied(appliedPositionIds);
       }
     } catch (error) {

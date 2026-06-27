@@ -15,7 +15,7 @@ const dbConfig = {
   }
 };
 
-let pool = null;
+let pool: any = null;
 
 export async function getConnection() {
   try {
@@ -33,7 +33,13 @@ export async function getConnection() {
   }
 }
 
-export async function query(queryString, params = []) {
+// Define the parameter type
+interface QueryParam {
+  name: string;
+  value: any;
+}
+
+export async function query(queryString: string, params: QueryParam[] = []): Promise<any[]> {
   const connection = await getConnection();
   const request = connection.request();
   

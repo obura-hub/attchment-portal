@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ToastProvider } from "@/context/ToastContext";
-import "./globals.css";
+// import "./globals.css";
+// Use require instead of import for CSS
+require('./globals.css');
 
 export const metadata: Metadata = {
   title: "Nairobi City County - Student Attachment Application Portal",

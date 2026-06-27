@@ -15,10 +15,20 @@ export async function GET(request: Request) {
     
     console.log(`Fetching documents for user ID: ${userId}`);
     
+    // Convert to number first
+    const userIdNum = parseInt(userId, 10);
+    
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid User ID' },
+        { status: 400 }
+      );
+    }
+    
     // First, check if user exists
     const userCheck = await query(
       `SELECT id, first_name, surname FROM Registration WHERE id = @userId`,
-      [{ name: 'userId', value: parseInt(userId) }]
+      [{ name: 'userId', value: userIdNum }]
     );
     
     if (!userCheck || userCheck.length === 0) {
@@ -44,13 +54,19 @@ export async function GET(request: Request) {
       FROM user_documents
       WHERE user_id = @userId
       ORDER BY uploaded_at DESC
-    `, [{ name: 'userId', value: parseInt(userId) }]);
+    `, [{ name: 'userId', value: userIdNum }]);
     
     console.log(`Found ${documents?.length || 0} documents for user ${userId}`);
     
+    // Format documents with display names
+    const formattedDocuments = (documents || []).map((doc: any) => ({
+      ...doc,
+      display_name: getDocumentDisplayName(doc.document_type)
+    }));
+    
     return NextResponse.json({
       success: true,
-      documents: documents || [],
+      documents: formattedDocuments,
       user: userCheck[0]
     });
     
@@ -61,4 +77,17 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function getDocumentDisplayName(documentType: string): string {
+  const displayNames: { [key: string]: string } = {
+    'introduction_letter': '📄 Introduction Letter from School',
+    'application_letter': '📝 Application Letter (Cover Letter)',
+    'cv': '📑 Curriculum Vitae (CV)',
+    'insurance': '🛡️ Personal Accident/Medical Insurance Cover',
+    'id_card': '🪪 National ID or Passport',
+    'police_clearance': '👮 Police Clearance Certificate',
+    'transcripts': '📊 Exam Transcripts'
+  };
+  return displayNames[documentType] || documentType;
 }
